@@ -15,3 +15,4 @@ Then go to http://localhost:3000
 - Update data
 - ~~Delete data~~
 - Order data
+- Authentication with permissions
