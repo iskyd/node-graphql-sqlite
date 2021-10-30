@@ -12,7 +12,7 @@ Then go to http://localhost:3000
 
 ## _TODO_
 
-- Update data
+- ~~Update data~~
 - ~~Delete data~~
 - Order data
 - Authentication with permissions

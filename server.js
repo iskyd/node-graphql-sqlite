@@ -224,6 +224,49 @@ const RootMutationType = new GraphQLObjectType({
                     })
                 })
             }
+        },
+        updateBook: {
+            type: BookType,
+            description: 'Update a book',
+            args: {
+                id: { type: GraphQLNonNull(GraphQLInt) },
+                name: { type: GraphQLNonNull(GraphQLString) },
+                authorId: { type: GraphQLNonNull(GraphQLInt) }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    db.run("UPDATE book SET name = ?, author_id = ? WHERE id = ?", [args.name, args.authorId, args.id], function(err) {
+                        db.get("SELECT * FROM book WHERE id = ?", [args.id], (err, row) => {
+                            if(err) {
+                                reject(null)
+                            }
+    
+                            resolve(row)    
+                        })
+                    })
+                })
+            }
+        },
+        updateAuthor: {
+            type: AuthorType,
+            description: 'Update an author',
+            args: {
+                id: { type: GraphQLNonNull(GraphQLInt) },
+                name: { type: GraphQLNonNull(GraphQLString) }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    db.run("UPDATE author SET name = ? WHERE id = ?", [args.name, args.id], function(err) {
+                        db.get("SELECT * FROM author WHERE id = ?", [args.id], (err, row) => {
+                            if(err) {
+                                reject(null)
+                            }
+    
+                            resolve(row)    
+                        })
+                    })
+                })
+            }
         }
     })
 })
