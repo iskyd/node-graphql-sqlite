@@ -8,7 +8,8 @@ const {
     GraphQLString,
     GraphQLList,
     GraphQLInt,
-    GraphQLNonNull
+    GraphQLNonNull,
+    GraphQLBoolean,
 } = require('graphql')
 
 const app = express()
@@ -57,6 +58,14 @@ const AuthorType = new GraphQLObjectType({
                 })
             }
         }
+    })
+})
+
+const DeleteType = new GraphQLObjectType({
+    name: 'DeleteType',
+    description: 'This represents a delete',
+    fields: () => ({
+        ok: { type: GraphQLBoolean }
     })
 })
 
@@ -176,6 +185,42 @@ const RootMutationType = new GraphQLObjectType({
                     db.run("INSERT INTO author (name) VALUES (?)", [author.name], function(err) {
                         author.id = this.lastID
                         resolve(author)
+                    })
+                })
+            }
+        },
+        deleteBook: {
+            type: DeleteType,
+            description: 'Delete a book',
+            args: {
+                id: { type: GraphQLNonNull(GraphQLInt) }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    db.run("DELETE FROM book WHERE id = ?", [args.id], function(err) {
+                        if(err === null) {
+                            resolve({'ok': true})
+                        } 
+
+                        resolve({'ok': false})
+                    })
+                })
+            }
+        },
+        deleteAuthor: {
+            type: DeleteType,
+            description: 'Delete an author',
+            args: {
+                id: { type: GraphQLNonNull(GraphQLInt) }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    db.run("DELETE FROM author WHERE id = ?", [args.id], function(err) {
+                        if(err === null) {
+                            resolve({'ok': true})
+                        } 
+
+                        resolve({'ok': false})
                     })
                 })
             }
