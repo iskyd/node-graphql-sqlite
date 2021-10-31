@@ -25,7 +25,7 @@ const BookType = new GraphQLObjectType({
         author: {
             type: AuthorType,
             resolve: (book) => {
-                return prisma.author.findMany({
+                return prisma.author.findUnique({
                     where: {
                         id: book.author_id
                     }
