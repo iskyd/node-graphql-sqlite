@@ -1,6 +1,7 @@
 const express = require('express')
 const expressGraphQL = require('express-graphql').graphqlHTTP
-const db = require('./database.js')
+const Prisma = require('prisma/prisma-client');
+const prisma = new Prisma.PrismaClient();
 
 const {
     GraphQLSchema,
@@ -24,14 +25,10 @@ const BookType = new GraphQLObjectType({
         author: {
             type: AuthorType,
             resolve: (book) => {
-                return new Promise((resolve, reject) => {
-                    db.get("SELECT * FROM author WHERE id = ?;", [book.author_id], (err, row) => {
-                        if(err) {
-                            reject(null)
-                        }
-
-                        resolve(row)
-                    })
+                return prisma.author.findMany({
+                    where: {
+                        id: book.author_id
+                    }
                 })
             }
         }
@@ -47,25 +44,13 @@ const AuthorType = new GraphQLObjectType({
         books: { 
             type: GraphQLList(BookType),
             resolve: (author) => {
-                return new Promise((resolve, reject) => {
-                    db.all("SELECT * FROM book WHERE author_id = ?;", [author.id], (err, rows) => {
-                        if(err) {
-                            reject([])
-                        }
-
-                        resolve(rows)
-                    })
+                return prisma.book.findMany({
+                    where: {
+                        author_id: author.id
+                    }
                 })
             }
         }
-    })
-})
-
-const DeleteType = new GraphQLObjectType({
-    name: 'DeleteType',
-    description: 'This represents a delete',
-    fields: () => ({
-        ok: { type: GraphQLBoolean }
     })
 })
 
@@ -77,15 +62,7 @@ const RootQueryType = new GraphQLObjectType({
             type: new GraphQLList(BookType),
             description: 'List of Books',
             resolve: () => {
-                return new Promise((resolve, reject) => {
-                    db.all("SELECT * FROM book;", (err, rows) => {
-                        if(err) {
-                            reject([])
-                        }
-
-                        resolve(rows)
-                    })
-                })
+                return prisma.book.findMany()
             }
         },
         book: {
@@ -95,16 +72,10 @@ const RootQueryType = new GraphQLObjectType({
                 id: { type: GraphQLInt }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    let sql = "SELECT * FROM book WHERE id = ?"
-                    let params = [args.id]
-                    db.get(sql, params, (err, row) => {
-                        if(err) {
-                            reject(null)
-                        }
-
-                        resolve(row)
-                    })
+                return prisma.book.findUnique({
+                    where: {
+                        id: args.id
+                    }
                 })
             }
         },
@@ -112,14 +83,7 @@ const RootQueryType = new GraphQLObjectType({
             type: new GraphQLList(AuthorType),
             description: 'List of authors',
             resolve: () => {
-                return new Promise((resolve, reject) => {
-                    db.all("SELECT * FROM author;", (err, rows) => {
-                        if (err) {
-                            reject([]);
-                        }
-                        resolve(rows);
-                    });
-                });
+                return prisma.author.findMany()
             }
         },
         author: {
@@ -129,16 +93,10 @@ const RootQueryType = new GraphQLObjectType({
                 id: { type: GraphQLInt }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    let sql = "SELECT * FROM author WHERE id = ?"
-                    let params = [args.id]
-                    db.get(sql, params, (err, row) => {
-                        if(err) {
-                            reject(null)
-                        }
-
-                        resolve(row)
-                    })
+                return prisma.author.findUnique({
+                    where: {
+                        id: args.id
+                    }
                 })
             }
         },
@@ -157,17 +115,8 @@ const RootMutationType = new GraphQLObjectType({
                 authorId: { type: GraphQLNonNull(GraphQLInt) }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    const book = {
-                        name: args.name,
-                        authorId: args.authorId
-                    }
-    
-                    db.run("INSERT INTO book (name, author_id) VALUES (?,?)", [book.name, book.authorId], function(err) {
-                        book.id = this.lastID
-                        resolve(book)
-                    })
-                })
+                const book = prisma.book.create({ data: { name: args.name, author_id: args.authorId } })
+                return book
             }
         },
         addAuthor: {
@@ -177,52 +126,32 @@ const RootMutationType = new GraphQLObjectType({
                 name: { type: GraphQLNonNull(GraphQLString) }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    const author = {
-                        name: args.name
-                    }
-
-                    db.run("INSERT INTO author (name) VALUES (?)", [author.name], function(err) {
-                        author.id = this.lastID
-                        resolve(author)
-                    })
-                })
+                const author = prisma.author.create({ data: { name: args.name } })
+                return author
             }
         },
         deleteBook: {
-            type: DeleteType,
+            type: BookType,
             description: 'Delete a book',
             args: {
                 id: { type: GraphQLNonNull(GraphQLInt) }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    db.run("DELETE FROM book WHERE id = ?", [args.id], function(err) {
-                        if(err === null) {
-                            resolve({'ok': true})
-                        } 
+                const book = prisma.book.delete({ where: { id: args.id } })
 
-                        resolve({'ok': false})
-                    })
-                })
+                return book
             }
         },
         deleteAuthor: {
-            type: DeleteType,
+            type: AuthorType,
             description: 'Delete an author',
             args: {
                 id: { type: GraphQLNonNull(GraphQLInt) }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    db.run("DELETE FROM author WHERE id = ?", [args.id], function(err) {
-                        if(err === null) {
-                            resolve({'ok': true})
-                        } 
+                const author = prisma.author.delete({ where: { id: args.id } })
 
-                        resolve({'ok': false})
-                    })
-                })
+                return author
             }
         },
         updateBook: {
@@ -234,17 +163,17 @@ const RootMutationType = new GraphQLObjectType({
                 authorId: { type: GraphQLNonNull(GraphQLInt) }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    db.run("UPDATE book SET name = ?, author_id = ? WHERE id = ?", [args.name, args.authorId, args.id], function(err) {
-                        db.get("SELECT * FROM book WHERE id = ?", [args.id], (err, row) => {
-                            if(err) {
-                                reject(null)
-                            }
-    
-                            resolve(row)    
-                        })
-                    })
+                const updateBook = prisma.book.update({
+                    where: {
+                      id: args.id,
+                    },
+                    data: {
+                      name: args.name,
+                      author_id: args.authorId
+                    },
                 })
+
+                return updateBook
             }
         },
         updateAuthor: {
@@ -255,17 +184,16 @@ const RootMutationType = new GraphQLObjectType({
                 name: { type: GraphQLNonNull(GraphQLString) }
             },
             resolve: (parent, args) => {
-                return new Promise((resolve, reject) => {
-                    db.run("UPDATE author SET name = ? WHERE id = ?", [args.name, args.id], function(err) {
-                        db.get("SELECT * FROM author WHERE id = ?", [args.id], (err, row) => {
-                            if(err) {
-                                reject(null)
-                            }
-    
-                            resolve(row)    
-                        })
-                    })
+                const updateAuthor = prisma.author.update({
+                    where: {
+                      id: args.id,
+                    },
+                    data: {
+                      name: args.name
+                    },
                 })
+
+                return updateAuthor
             }
         }
     })

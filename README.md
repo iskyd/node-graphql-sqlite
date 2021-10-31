@@ -14,7 +14,7 @@ Then go to http://localhost:3000
 
 - ~~Update data~~
 - ~~Delete data~~
-- Prisma ORM
+- ~~Prisma ORM~~
 - Order data
 - Pagination
 - Authentication with permissions
