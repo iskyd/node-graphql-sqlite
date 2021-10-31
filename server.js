@@ -209,7 +209,7 @@ const RootQueryType = new GraphQLObjectType({
                                 pageInfo: {
                                     hasNextPage: nodesLeft > args.first,
                                     startCursor: args.after,
-                                    endCursor: Buffer.from("cursor_" + authors[authors.length - 1].id).toString('base64')
+                                    endCursor: nodesLeft > args.first ? Buffer.from("cursor_" + authors[authors.length - 1].id).toString('base64') : null
                                 }
                             }
                             
