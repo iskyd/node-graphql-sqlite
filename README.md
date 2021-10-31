@@ -1,6 +1,7 @@
 # Node + GraphQL + SQLite
 
 ## _DATABASE_
+Create an SQLite database: ./prisma/db.sqlite
 ```sh
 CREATE TABLE author (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
