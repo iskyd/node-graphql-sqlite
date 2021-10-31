@@ -51,5 +51,6 @@ Then go to http://localhost:3000
 - ~~Delete data~~
 - ~~Prisma ORM~~
 - Order data
-- Pagination
+- ~~Pagination~~
+- Pagination in subfields
 - Authentication with permissions

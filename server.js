@@ -54,15 +54,102 @@ const AuthorType = new GraphQLObjectType({
     })
 })
 
+const PageInfo = new GraphQLObjectType({
+    name: 'PageInfo',
+    fields: () => ({
+        hasNextPage: { type: GraphQLBoolean },
+        startCursor: { type: GraphQLString },
+        endCursor: { type: GraphQLString }
+    })
+})
+
+const BookEdge = new GraphQLObjectType({
+    name: 'BookEdge',
+    fields: () => ({
+        node: { type: BookType },
+        cursor: { type: GraphQLString },
+    })
+})
+
+const BookConnection = new GraphQLObjectType({
+    name: 'BookConnection',
+    fields: () => ({
+        edges: { type: new GraphQLList(BookEdge) },
+        pageInfo: { type: PageInfo }
+    })
+});
+
+const AuthorEdge = new GraphQLObjectType({
+    name: 'AuthorEdge',
+    fields: () => ({
+        node: { type: AuthorType },
+        cursor: { type: GraphQLString },
+    })
+})
+
+const AuthorConnection = new GraphQLObjectType({
+    name: 'AuthorConnection',
+    fields: () => ({
+        edges: { type: new GraphQLList(AuthorEdge) },
+        pageInfo: { type: PageInfo }
+    })
+});
+
 const RootQueryType = new GraphQLObjectType({
     name: 'Query',
     description: 'Root Query',
     fields: () => ({
         books: {
-            type: new GraphQLList(BookType),
+            type: BookConnection,
             description: 'List of Books',
-            resolve: () => {
-                return prisma.book.findMany()
+            args: {
+                first: { type: GraphQLInt, defaultValue: 10 },
+                after: { type: GraphQLString, defaultValue: "Y3Vyc29yXzA=" }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    const lastId = parseInt(Buffer.from(args.after, 'base64').toString('utf-8').split("_")[1])
+                    
+                    prisma.book.findMany({
+                        where: {
+                            id: {
+                                gt: lastId
+                            }
+                        },
+                        take: args.first
+                    }).then((books) => {
+                        if(books.length === 0) {
+                            resolve({
+                                edges: [],
+                                pageInfo: {}
+                            })
+                        }
+
+                        prisma.book.count({
+                            where: {
+                                id: {
+                                    gt: lastId
+                                }
+                            }
+                        }).then((nodesLeft) => {
+                            const result = { 
+                                edges: books.map(book => {
+                                    return {
+                                        cursor: Buffer.from("cursor_" + book.id).toString('base64'),
+                                        node: book
+                                    }
+                                }),
+                                pageInfo: {
+                                    hasNextPage: nodesLeft > args.first,
+                                    startCursor: args.after,
+                                    endCursor: nodesLeft > args.first ? Buffer.from("cursor_" + books[books.length - 1].id).toString('base64') : null
+                                }
+                            }
+                            
+                            resolve(result)
+                        })
+                    })
+                })
             }
         },
         book: {
@@ -80,10 +167,56 @@ const RootQueryType = new GraphQLObjectType({
             }
         },
         authors: {
-            type: new GraphQLList(AuthorType),
+            type: AuthorConnection,
             description: 'List of authors',
-            resolve: () => {
-                return prisma.author.findMany()
+            args: {
+                first: { type: GraphQLInt, defaultValue: 10 },
+                after: { type: GraphQLString, defaultValue: "Y3Vyc29yXzA=" }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    const lastId = parseInt(Buffer.from(args.after, 'base64').toString('utf-8').split("_")[1])
+                    
+                    prisma.author.findMany({
+                        where: {
+                            id: {
+                                gt: lastId
+                            }
+                        },
+                        take: args.first
+                    }).then((authors) => {
+                        if(authors.length === 0) {
+                            resolve({
+                                edges: [],
+                                pageInfo: {}
+                            })
+                        }
+
+                        prisma.author.count({
+                            where: {
+                                id: {
+                                    gt: lastId
+                                }
+                            }
+                        }).then((nodesLeft) => {
+                            const result = { 
+                                edges: authors.map(author => {
+                                    return {
+                                        cursor: Buffer.from("cursor_" + author.id).toString('base64'),
+                                        node: author
+                                    }
+                                }),
+                                pageInfo: {
+                                    hasNextPage: nodesLeft > args.first,
+                                    startCursor: args.after,
+                                    endCursor: Buffer.from("cursor_" + authors[authors.length - 1].id).toString('base64')
+                                }
+                            }
+                            
+                            resolve(result)
+                        })
+                    })
+                })
             }
         },
         author: {
