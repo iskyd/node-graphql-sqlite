@@ -52,5 +52,5 @@ Then go to http://localhost:3000
 - ~~Prisma ORM~~
 - Order data
 - ~~Pagination~~
-- Pagination in subfields
+- ~~Pagination in subfields~~
 - Authentication with permissions

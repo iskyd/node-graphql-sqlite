@@ -42,12 +42,56 @@ const AuthorType = new GraphQLObjectType({
         id: { type: GraphQLNonNull(GraphQLInt) },
         name: { type: GraphQLNonNull(GraphQLString) },
         books: { 
-            type: GraphQLList(BookType),
-            resolve: (author) => {
-                return prisma.book.findMany({
-                    where: {
-                        author_id: author.id
-                    }
+            args: {
+                first: { type: GraphQLInt, defaultValue: 10 },
+                after: { type: GraphQLString, defaultValue: "Y3Vyc29yXzA=" }
+            },
+            type: BookConnection,
+            resolve: (author, args) => {
+                return new Promise((resolve, reject) => {
+                    const lastId = parseInt(Buffer.from(args.after, 'base64').toString('utf-8').split("_")[1])
+                    
+                    prisma.book.findMany({
+                        where: {
+                            author_id: author.id,
+                            id: {
+                                gt: lastId
+                            }
+                        },
+                        take: args.first
+                    }).then((books) => {
+                        if(books.length === 0) {
+                            resolve({
+                                edges: [],
+                                pageInfo: {}
+                            })
+                        }
+
+                        prisma.book.count({
+                            where: {
+                                author_id: author.id,
+                                id: {
+                                    gt: lastId
+                                }
+                            }
+                        }).then((nodesLeft) => {
+                            const result = { 
+                                edges: books.map(book => {
+                                    return {
+                                        cursor: Buffer.from("cursor_" + book.id).toString('base64'),
+                                        node: book
+                                    }
+                                }),
+                                pageInfo: {
+                                    hasNextPage: nodesLeft > args.first,
+                                    startCursor: args.after,
+                                    endCursor: nodesLeft > args.first ? Buffer.from("cursor_" + books[books.length - 1].id).toString('base64') : null
+                                }
+                            }
+                            
+                            resolve(result)
+                        })
+                    })
                 })
             }
         }
