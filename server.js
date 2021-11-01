@@ -58,6 +58,9 @@ const AuthorType = new GraphQLObjectType({
                                 gt: lastId
                             }
                         },
+                        orderBy: {
+                            id: 'asc'
+                        },
                         take: args.first
                     }).then((books) => {
                         if(books.length === 0) {
@@ -160,6 +163,9 @@ const RootQueryType = new GraphQLObjectType({
                                 gt: lastId
                             }
                         },
+                        orderBy: {
+                            id: 'asc'
+                        },
                         take: args.first
                     }).then((books) => {
                         if(books.length === 0) {
@@ -226,6 +232,9 @@ const RootQueryType = new GraphQLObjectType({
                             id: {
                                 gt: lastId
                             }
+                        },
+                        orderBy: {
+                            id: 'asc'
                         },
                         take: args.first
                     }).then((authors) => {
