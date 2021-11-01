@@ -52,5 +52,4 @@ Then go to http://localhost:3000
 - ~~Prisma ORM~~
 - ~~Pagination~~
 - ~~Pagination in subfields~~
-- Refactor in different files
-- Authentication with permissions
+- ~~Refactor in different files~~
